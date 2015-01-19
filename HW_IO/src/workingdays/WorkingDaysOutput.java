@@ -2,6 +2,7 @@
 package workingdays;
 
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.time.temporal.TemporalQuery;
@@ -17,7 +18,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 class IsWorkingDayQuery {
-
+	static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+	
 	public static Boolean checkQuery(TemporalAccessor date) {
 		int month = date.get(ChronoField.MONTH_OF_YEAR);
 		int day = date.get(ChronoField.DAY_OF_MONTH);
@@ -94,6 +96,18 @@ public class WorkingDaysOutput {
 		}
 
 	}
+	
+	public static List<String> listIfWorkingRange(LocalDate startDate,
+			LocalDate endDate) {
+		List<String> strList = new ArrayList<String>();
+		boolean isWorking = false;
+		while (!startDate.isAfter(endDate)) {
+			isWorking = startDate.query(IsWorkingDayQuery::checkQuery);
+			strList.add(startDate + " is " + isWorking + " working day.");
+			startDate = startDate.plusDays(1);
+		}
+		return strList;
+	}
 
 	public static void main(String[] args) {
 
@@ -121,20 +135,15 @@ public class WorkingDaysOutput {
 		Scanner sc = new Scanner(System.in);
 		String strStartDate = sc.next();
 
-		LocalDate startDate = LocalDate.of(
-				Integer.parseInt(strStartDate.substring(6, 10)),
-				Integer.parseInt(strStartDate.substring(3, 5)),
-				Integer.parseInt(strStartDate.substring(0, 2)));
-
+		//Could put some try catch for wrong dates
+		LocalDate startDate = LocalDate.parse(strStartDate, IsWorkingDayQuery.formatter);
 		LocalDate endDate;
+		
 		do {
 			System.out
 					.println("Type in end date in following format dd.mm.yyyy, it also must be after or equal start date: ");
 			String strEndDate = sc.next();
-			endDate = LocalDate.of(
-					Integer.parseInt(strEndDate.substring(6, 10)),
-					Integer.parseInt(strEndDate.substring(3, 5)),
-					Integer.parseInt(strEndDate.substring(0, 2)));
+			endDate = LocalDate.parse(strEndDate, IsWorkingDayQuery.formatter);
 
 		} while (endDate.isBefore(startDate));
 
