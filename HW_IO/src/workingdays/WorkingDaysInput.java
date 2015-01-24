@@ -13,11 +13,20 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/**
+ * Class to enter valid dates in a text file.
+ * @author Tonko
+ *
+ */
 public class WorkingDaysInput {
 
 	final static String DATE_FORMAT = "dd.MM.yyyy";
-
-	public static boolean isDateValid(String date) {
+	/**
+	 * 
+	 * @param date The string to be checked whether it is a valid date.
+	 * @return Returns whether the string is a valid date.
+	 */
+/*	public static boolean isDateValid(String date) {
 		try {
 			DateFormat df = new SimpleDateFormat(DATE_FORMAT);
 			df.setLenient(false);
@@ -26,8 +35,12 @@ public class WorkingDaysInput {
 		} catch (ParseException e) {
 			return false;
 		}
-	}
+	}*/
 
+	/**
+	 *  Enter dates and save in file (arg[0])
+	 * @param args One argument, the path to the file which contains the entered dates.
+	 */
 	public static void main(String[] args) {
 		if (args.length == 0) {
 			System.out.println("Usage: filename");

@@ -11,7 +11,9 @@ import java.util.List;
 
 import javax.swing.JApplet;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -23,7 +25,9 @@ public class WorkingDaysGUI extends JApplet {
 
 	static private JTextField jtaStartDate = new JTextField(20);
 	static private JTextField jtaEndDate = new JTextField(20);
+	static private JTextField fileName = new JTextField(20);
 	static private JTextArea jtaOutput = new JTextArea(40, 20);
+	static private JButton open = new JButton("Open");
 
 	// Add one more text area + scrolling pane for the working dates to be
 	// shown, implement in main() as well
@@ -34,32 +38,62 @@ public class WorkingDaysGUI extends JApplet {
 	public void init() {
 		Container cp = getContentPane();
 		cp.setLayout(new FlowLayout());
+
 		cp.add(btnCalc);
 		add(new JScrollPane(jtaOutput));
 		cp.add(jtaStartDate);
 		cp.add(jtaEndDate);
-		cp.add(jtaOutput);
+		// open.addActionListener(new OpenL());
+		cp.add(open);
+		fileName.setEditable(false);
+		cp.add(fileName);
 
 		// e is automatically converted to ActionEvent type
+		open.addActionListener(e -> {
+		      JFileChooser c = new JFileChooser();
+		      // Demonstrate "Open" dialog:
+		      int rVal = c.showOpenDialog(WorkingDaysGUI.this);
+		      if(rVal == JFileChooser.APPROVE_OPTION) {
+		        fileName.setText(c.getCurrentDirectory().toString() + "\\" + c.getSelectedFile().getName());
+
+		      }
+		      if(rVal == JFileChooser.CANCEL_OPTION) {
+		        fileName.setText("You pressed cancel");
+		      }
+		});
+		
 		btnCalc.addActionListener(e -> {
 			startDateStr = jtaStartDate.getText();
 			endDateStr = jtaEndDate.getText();
-			
-			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-			//Could put some try catch for wrong dates
+
+			DateTimeFormatter formatter = DateTimeFormatter
+					.ofPattern("dd.MM.yyyy");
+			// Could put some try catch for wrong dates
 			LocalDate startDate = LocalDate.parse(startDateStr, formatter);
 			LocalDate endDate = LocalDate.parse(endDateStr, formatter);
 			List<String> strList = new ArrayList<String>();
-
-			if (endDate.isBefore(startDate)) {
-				jtaOutput.append("End Date should be after Start Date");
-			} else {
-				strList = WorkingDaysOutput.listIfWorkingRange(startDate,
-						endDate);
-				for (int i = 0; i < strList.size(); i++)
-					jtaOutput.append(strList.get(i) + " \n");
+			file = fileName.getText();
+			if (endDate == null || startDate == null)
+				JOptionPane.showMessageDialog(null,
+						"You must type dates first!", "Error!",
+						JOptionPane.ERROR_MESSAGE);
+			else {
+				if (endDate.isBefore(startDate)) {
+					jtaOutput.append("End Date should be after Start Date");
+				} else {
+					if (file == null)
+						JOptionPane
+								.showMessageDialog(
+										null,
+										"You must select a file for working days first!",
+										"Error!", JOptionPane.ERROR_MESSAGE);
+					else
+						strList = WorkingDaysOutput.listIfWorkingRange(
+								startDate, endDate, file);
+					for (int i = 0; i < strList.size(); i++)
+						jtaOutput.append(strList.get(i) + " \n");
+				}
 			}
-			
 		});
 
 	}

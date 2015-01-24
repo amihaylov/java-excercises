@@ -17,55 +17,75 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/**
+ * Class, implementing queries to check whether a date is holiday or in weekend.
+ * 
+ * @author Tonko
+ *
+ */
 class IsWorkingDayQuery {
-	static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-	
+	static DateTimeFormatter formatter = DateTimeFormatter
+			.ofPattern("dd.MM.yyyy");
+	static DateTimeFormatter dateOnly = DateTimeFormatter.ofPattern("dd.MM");
+
+	/**
+	 * Query method to check dates.
+	 * 
+	 * @param date
+	 *            Date to be checked whether it is working or not.
+	 * @return Returns false if not working, true if working.
+	 */
 	public static Boolean checkQuery(TemporalAccessor date) {
 		int month = date.get(ChronoField.MONTH_OF_YEAR);
 		int day = date.get(ChronoField.DAY_OF_MONTH);
-		int weekday = date.get(ChronoField.DAY_OF_WEEK);
 
 		File file = new File("holidays.txt");
 		Charset charset = Charset.forName("UTF-8");
 		Path fileP;
 		fileP = file.toPath();
 
-		List<String> holidaysList = new ArrayList<String>();
+		List<MonthDay> holidaysList = new ArrayList<MonthDay>();
 
 		try (BufferedReader reader = Files.newBufferedReader(fileP, charset)) {
 			String line = null;
 			while ((line = reader.readLine()) != null) {
-				holidaysList.add(line);
+				holidaysList.add(MonthDay.parse(line, dateOnly));
 			}
 		} catch (IOException x) {
 			System.err.format("IOException: %s%n", x);
 		}
 
-		// Check for weekends
-		if (weekday == 7 || weekday == 6)
+		// Check if date is in weekend
+		if (date.get(ChronoField.DAY_OF_WEEK) == 7
+				|| date.get(ChronoField.DAY_OF_WEEK) == 6)
 			return false;
 
-		// Check for holidays
-		String check = null;
-		if (month > 9)
-			check = Integer.toString(day) + "." + Integer.toString(month);
-		else if (day > 9)
-			check = Integer.toString(day) + ".0" + Integer.toString(month);
-		else
-			check = "0" + Integer.toString(day) + ".0"
-					+ Integer.toString(month);
-
-		if (holidaysList.contains(check))
+		MonthDay tempComp = MonthDay.of(month, day);
+		if (holidaysList.contains(tempComp))
 			return false;
 
 		return true;
 	}
 }
 
-// Checks if the date represented as string is working date (including W days)
-// or not, using queries
+/**
+ * Class to determine whether a list of dates, contained in file (args[0]), is
+ * working or not. The file 'holidays.txt', located in root directory, contains
+ * list of holidays. If the date is on holidays or weekends it is not working
+ * day, unless it is recorded in 'Wdd.MM.yyyy' format. Then it is working.
+ * 
+ * @author Tonko
+ *
+ */
 public class WorkingDaysOutput {
 
+	/**
+	 * Method to check date as string
+	 * 
+	 * @param storedDate
+	 *            Date to be checked in a string format (Wdd.MM.yyyy)
+	 * @return If working (starts with W or query returns true) returns true
+	 */
 	public static boolean checkWorkingDates(String storedDate) {
 		LocalDate date = null;
 
@@ -73,9 +93,7 @@ public class WorkingDaysOutput {
 			return true;
 
 		else {
-			date = LocalDate.of(Integer.parseInt(storedDate.substring(6, 10)),
-					Integer.parseInt(storedDate.substring(3, 5)),
-					Integer.parseInt(storedDate.substring(0, 2)));
+			date = LocalDate.parse(storedDate, IsWorkingDayQuery.formatter);
 			return (date.query(IsWorkingDayQuery::checkQuery)); // Lambda
 																// expression to
 																// query whether
@@ -84,9 +102,74 @@ public class WorkingDaysOutput {
 		}
 	}
 
+	/**
+	 * Method to check range of dates and return list of all dates with
+	 * description. It uses 'working.txt' file to check whether a date is
+	 * specifically stated as working even if it is on weekends or holidays.
+	 * Returns a list of String.
+	 * 
+	 * @param startDate
+	 *            Start date of range.
+	 * @param endDate
+	 *            End date of range.
+	 * @return List of all dates as string and whether they are working or not.
+	 */
+
+	// TODO Reconstruct method so it takes filepath as argument and use it in
+	// main and in GUI
+	// instead of printWorkingDatesRange. Make GUI so it selects files.
+	public static List<String> listIfWorkingRange(LocalDate startDate,
+			LocalDate endDate, String filePathStr) {
+		List<String> strList = new ArrayList<String>();
+		List<MonthDay> workDaysFromFileList = new ArrayList<MonthDay>();
+		boolean isWorking = false;
+
+		File file = new File(filePathStr);
+		Charset charset = Charset.forName("UTF-8");
+		Path fileP;
+		fileP = file.toPath();
+
+		try (BufferedReader reader = Files.newBufferedReader(fileP, charset)) {
+			String line = null;
+			while ((line = reader.readLine()) != null) {
+				workDaysFromFileList.add(MonthDay.parse(line,
+						IsWorkingDayQuery.dateOnly));
+			}
+		} catch (IOException x) {
+			System.err.format("IOException: %s%n", x);
+		}
+
+		int countWorkingDays = 0, countFreeDays = 0;
+		while (!startDate.isAfter(endDate)) {
+			isWorking = startDate.query(IsWorkingDayQuery::checkQuery);
+			MonthDay tempComp = MonthDay.from(startDate);
+			if (isWorking)
+				countWorkingDays++;
+			else
+				countFreeDays++;
+			if (workDaysFromFileList.contains(tempComp)) {
+				strList.add(startDate + " is true working day.");
+				countWorkingDays++;
+				countFreeDays--;
+			} else
+				strList.add(startDate + " is " + isWorking + " working day.");
+			startDate = startDate.plusDays(1);
+		}
+		strList.add("The number of working days is " + countWorkingDays);
+		strList.add("The number of free days is " + countFreeDays);
+		return strList;
+	}
+
+	/**
+	 * Method to print all dates in a range and whether they are working or not.
+	 * 
+	 * @param startDate
+	 *            Start date of range
+	 * @param endDate
+	 *            End date of range
+	 */
 	public static void printWorkingDatesRange(LocalDate startDate,
 			LocalDate endDate) {
-		// List<LocalDate> dateList = new ArrayList<LocalDate>();
 		boolean isWorking = false;
 		while (!startDate.isAfter(endDate)) {
 			isWorking = startDate.query(IsWorkingDayQuery::checkQuery);
@@ -96,26 +179,20 @@ public class WorkingDaysOutput {
 		}
 
 	}
-	
-	public static List<String> listIfWorkingRange(LocalDate startDate,
-			LocalDate endDate) {
-		List<String> strList = new ArrayList<String>();
-		boolean isWorking = false;
-		while (!startDate.isAfter(endDate)) {
-			isWorking = startDate.query(IsWorkingDayQuery::checkQuery);
-			strList.add(startDate + " is " + isWorking + " working day.");
-			startDate = startDate.plusDays(1);
-		}
-		return strList;
-	}
 
+	/**
+	 * Testing methods
+	 * 
+	 * @param args
+	 *            File to read some dates
+	 */
 	public static void main(String[] args) {
 
 		if (args.length == 0) {
 			System.out.println("Usage: filename");
 			return;
 		}
-		File file = new File(args[0].toString());
+		File file = new File(args[0]);
 		Charset charset = Charset.forName("UTF-8");
 		Path fileP;
 		fileP = file.toPath();
@@ -135,15 +212,17 @@ public class WorkingDaysOutput {
 		Scanner sc = new Scanner(System.in);
 		String strStartDate = sc.next();
 
-		//Could put some try catch for wrong dates
-		LocalDate startDate = LocalDate.parse(strStartDate, IsWorkingDayQuery.formatter);
+		LocalDate startDate = LocalDate.parse(strStartDate,
+				IsWorkingDayQuery.formatter);
 		LocalDate endDate;
-		
+
 		do {
 			System.out
 					.println("Type in end date in following format dd.mm.yyyy, it also must be after or equal start date: ");
 			String strEndDate = sc.next();
 			endDate = LocalDate.parse(strEndDate, IsWorkingDayQuery.formatter);
+			if (endDate.isBefore(startDate))
+				System.out.println("End date must be after start date.");
 
 		} while (endDate.isBefore(startDate));
 
