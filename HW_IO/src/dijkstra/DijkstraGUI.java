@@ -7,7 +7,7 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Label;
 
-public class testGUI {
+public class DijkstraGUI {
 
 	/**
 	 * Launch the application.
